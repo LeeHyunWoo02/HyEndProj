@@ -9,12 +9,14 @@ import HyEnd.Proj.Entity.ActivityLogDetail;
 import HyEnd.Proj.Entity.User;
 import HyEnd.Proj.Repository.ActivityLogRepository;
 import HyEnd.Proj.Repository.ActivityRepository;
+import HyEnd.Proj.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -22,12 +24,7 @@ import java.util.Optional;
 public class ActivityLogService {
     @Autowired ActivityLogRepository activityLogRepository;
     @Autowired ActivityRepository activityRepository;
-//    @Autowired UserRepository userRepository;
-
-//    @Autowired
-//    public ActivityLogService(ActivityLogRepository activityLogRepository, ActivityRepository activityRepository) {
-//        this.activityLogRepository = activityLogRepository;
-//    }
+    @Autowired UserRepository userRepository;
 
     public List<ActivityLog> findAll() {
         return activityLogRepository.findAll();
@@ -37,18 +34,11 @@ public class ActivityLogService {
         return activityLogRepository.findLogById(id);
     }
 
-    public Long save(RequestActivitiesDTO requestActivitiesDTO) {
+    public Long save(RequestActivitiesDTO requestActivitiesDTO) throws NoSuchElementException {
         List<ActivitiesGroupDTO> groupList = requestActivitiesDTO.getGroup();
         String userId = requestActivitiesDTO.getUserId();
         Date date = requestActivitiesDTO.getDate();
-//        User user = userRepository.findByUserId(userId);
-        User user = new User();
-        user.setUserId(userId);
-        user.setId(1L);
-        user.setWeight(80L);
-        user.setPassword("123456");
-        user.setEmail("admin@gmail.com");
-        user.setGender("male");
+        User user = userRepository.findByUserId(userId);
 
         long weight = user.getWeight();
 
@@ -59,7 +49,8 @@ public class ActivityLogService {
 
         double totalCaloriesBurned = 0;
         for (ActivitiesGroupDTO groupDTO : groupList) {
-            Activity activity = activityRepository.findById(groupDTO.getId()).get();
+            Activity activity = activityRepository.findById(groupDTO.getId())
+                    .orElseThrow(() -> new NoSuchElementException("Activity not found with ID: " + groupDTO.getId()));
             long duration = groupDTO.getDuration();
             int metValue = activity.getMetValue();
             ActivityLogDetail activityLogDetail = new ActivityLogDetail();
